@@ -1,15 +1,13 @@
-provider "aws" {
-  region = "ap-northeast-3"
-}
-
-resource "aws_instance" "example" {
-	ami	= "ami-0265608a60d05ecf8"
-	instance_type = "t2.micro"
-	vpc_security_group_ids = [aws_security_group.instance.id]
-	key_name = aws_key_pair.kp.key_name	
+resource "aws_instance" "jenkins" {
+	ami		       = "ami-012c6a03c2e59a445"
+	instance_type	       = "t3.small"
+	subnet_id	       = aws_subnet.subnet.id
+	vpc_security_group_ids = [aws_security_group.sg.id]
+	key_name	       = aws_key_pair.kp.key_name	
+	associate_public_ip_address = true
 
 	provisioner "local-exec" {
-  		command = "echo ${self.public_ip} >> ./ansible/hosts"
+  		command = "echo ${aws_eip.jenkins.public_ip} >> ./ansible/jenkins-hosts"
   	}
  
 	#provisioner "local-exec" {
@@ -20,7 +18,6 @@ resource "aws_instance" "example" {
    	 	source = "script.sh"
     		destination = "/home/ec2-user/script.sh"
 
-    		# 인스턴스에 SSH 연결
     		connection {
       			type        = "ssh"
       			host        = self.public_ip
@@ -35,7 +32,6 @@ resource "aws_instance" "example" {
       			"/home/ec2-user/script.sh"
     		]
 
-    		# 인스턴스에 SSH 연결
     		connection {
       			type        = "ssh"
       			host        = self.public_ip
@@ -45,27 +41,20 @@ resource "aws_instance" "example" {
   	}
 
 	tags = {
-		Name = "terraform-example" 
+		Name = "jenkins-server" 
 	}
 }
 
-resource "aws_security_group" "instance" {
-	name = "terraform-example-instance"
-
-	ingress {
-		from_port = 8080
-		to_port = 8080
-		protocol = "tcp"
-		cidr_blocks = ["0.0.0.0/0"]
-	}
-	
-	ingress {
-		from_port = 22
-		to_port = 22
-		protocol = "tcp"
-		cidr_blocks = ["0.0.0.0/0"]
-	}
-
-
+resource "aws_eip" "jenkins" {
+  vpc        = true
+  depends_on = [aws_internet_gateway.igw]
 }
 
+resource "aws_eip_association" "jenkins" {
+  instance_id   = aws_instance.jenkins.id
+  allocation_id = aws_eip.jenkins.id
+}
+
+output "jenkis_public_ip" {
+  value = aws_eip.jenkins.public_ip
+}
