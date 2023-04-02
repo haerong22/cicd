@@ -20,6 +20,23 @@
       sudo yum install -y ansible  
     ignore_errors: yes
 
+  - name: Check ssh-key
+    stat:
+      path: "/home/ec2-user/.ssh/id_rsa"
+    register: ssh_exist
+
+  - name: Generate ssh-key
+    command: ssh-keygen -q -t rsa -N '' -f /home/ec2-user/.ssh/id_rsa
+    when: ssh_exist.stat.exists == False
+    ignore_errors: yes
+  
+  - name: Upload S3 to ssh-key
+    shell: | 
+      test -d .aws || mkdir .aws
+      cp credentials .aws/
+      aws s3 cp /home/ec2-user/.ssh/id_rsa.pub s3://key-store-bucket
+    ignore_errors: yes
+
   - name: Wait for 10 seconds
     pause:
       seconds: 10
