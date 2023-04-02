@@ -4,6 +4,6 @@
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
   tasks:
-  - name: hello world
-    shell: echo 'hello world' >> test.txt
+  - name: Start Nginx
+    command: docker run --name=nginx -d -p 80:80 nginx
     ignore_errors: yes
