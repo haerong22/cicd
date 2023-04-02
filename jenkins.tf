@@ -10,13 +10,9 @@ resource "aws_instance" "jenkins" {
   		command = "echo ${aws_eip.jenkins.public_ip} >> ./ansible/jenkins-hosts"
   	}
  
-	#provisioner "local-exec" {
-  	#	command = "sh start.sh"
-	#}
-
         provisioner "file" {
-   	 	source = "script.sh"
-    		destination = "/home/ec2-user/script.sh"
+   	 	source = "./script/init.sh"
+    		destination = "/home/ec2-user/init.sh"
 
     		connection {
       			type        = "ssh"
@@ -28,8 +24,8 @@ resource "aws_instance" "jenkins" {
 
   	provisioner "remote-exec" {
     		inline = [
-      			"chmod +x /home/ec2-user/script.sh",
-      			"/home/ec2-user/script.sh"
+      			"chmod +x /home/ec2-user/init.sh",
+      			"/home/ec2-user/init.sh"
     		]
 
     		connection {
