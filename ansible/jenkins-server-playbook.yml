@@ -1,51 +1,50 @@
 ---
-
 - hosts: all
   vars:
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     jenkins_home: /home/ec2-user/jenkins_home
   tasks:
-  - name: Create Jenkins Directory
-    shell: |
-      mkdir {{jenkins_home}}
-      sudo chown -R 1000:1000 {{jenkins_home}}
+    - name: Create Jenkins Directory
+      shell: |
+        mkdir {{jenkins_home}}
+        sudo chown -R 1000:1000 {{jenkins_home}}
 
-  - name: Start Jenkins
-    command: docker run -d --name my-jenkins -p 8080:8080 -p 50000:50000 -v /home/ec2-user/jenkins_home:/var/jenkins_home jenkins/jenkins:lts 
-    ignore_errors: yes
-  
-  - name: Install Ansible
-    shell: |
-      sudo amazon-linux-extras install ansible2 -y
-      sudo yum install -y ansible  
-    ignore_errors: yes
+    - name: Start Jenkins
+      command: docker run -d --name my-jenkins -p 8080:8080 -p 50000:50000 -v {{jenkins_home}}:/var/jenkins_home jenkins/jenkins:lts
+      ignore_errors: yes
 
-  - name: Check ssh-key
-    stat:
-      path: "/home/ec2-user/.ssh/id_rsa"
-    register: ssh_exist
+    - name: Install Ansible
+      shell: |
+        sudo amazon-linux-extras install ansible2 -y
+        sudo yum install -y ansible
+      ignore_errors: yes
 
-  - name: Generate ssh-key
-    command: ssh-keygen -q -t rsa -N '' -f /home/ec2-user/.ssh/id_rsa
-    when: ssh_exist.stat.exists == False
-    ignore_errors: yes
-  
-  - name: Upload S3 to ssh-key
-    shell: | 
-      test -d .aws || mkdir .aws
-      cp credentials .aws/
-      aws s3 cp /home/ec2-user/.ssh/id_rsa.pub s3://key-store-bucket
-    ignore_errors: yes
+    - name: Check ssh-key
+      stat:
+        path: "/home/ec2-user/.ssh/id_rsa"
+      register: ssh_exist
 
-  - name: Wait for 10 seconds
-    pause:
-      seconds: 10
-      prompt: "Waiting for 10 seconds..."
+    - name: Generate ssh-key
+      command: ssh-keygen -q -t rsa -N '' -f /home/ec2-user/.ssh/id_rsa
+      when: ssh_exist.stat.exists == False
+      ignore_errors: yes
 
-  - name: Get initial admin password
-    command: docker exec -i my-jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-    register: init_password
+    - name: Upload S3 to ssh-key
+      shell: |
+        test -d .aws || mkdir .aws
+        cp credentials .aws/
+        aws s3 cp /home/ec2-user/.ssh/id_rsa.pub s3://{{bucket_name}}
+      ignore_errors: yes
 
-  - name: Show initial admin password
-    debug:
-      var: init_password.stdout
+    - name: Wait for 10 seconds
+      pause:
+        seconds: 10
+        prompt: "Waiting for 10 seconds..."
+
+    - name: Get initial admin password
+      command: docker exec -i my-jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+      register: init_password
+
+    - name: Show initial admin password
+      debug:
+        var: init_password.stdout

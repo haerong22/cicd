@@ -26,10 +26,10 @@ resource "aws_instance" "jenkins" {
     		inline = [
       			"chmod +x /home/ec2-user/init.sh",
       			"/home/ec2-user/init.sh",
-			"echo ${aws_instance.web.private_ip} >> /home/ec2-user/web-hosts",
-			"echo [default] >> /home/ec2-user/credentials",
-                        "echo aws_access_key_id = ${aws_iam_access_key.s3_user_key.id} >> /home/ec2-user/credentials",
-                        "echo aws_secret_access_key = ${aws_iam_access_key.s3_user_key.secret} >> /home/ec2-user/credentials"
+				"echo ${aws_instance.web.private_ip} >> /home/ec2-user/web-hosts",
+				"echo [default] >> /home/ec2-user/credentials",
+				"echo aws_access_key_id = ${aws_iam_access_key.s3_user_key.id} >> /home/ec2-user/credentials",
+				"echo aws_secret_access_key = ${aws_iam_access_key.s3_user_key.secret} >> /home/ec2-user/credentials"
     		]
 
     		connection {

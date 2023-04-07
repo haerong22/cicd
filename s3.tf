@@ -12,7 +12,7 @@ resource "aws_iam_user_policy_attachment" "s3_user_policy" {
 }
 
 resource "aws_s3_bucket" "my_bucket" {
-  bucket = "key-store-bucket"
+  bucket = "cicd-bucket-dev"
 }
 
 resource "aws_s3_bucket_acl" "my_bucket" {

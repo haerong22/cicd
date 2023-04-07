@@ -1,23 +1,50 @@
 ---
-
 - hosts: all
   vars:
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
   tasks:
-  - name: Start Nginx
-    command: docker run --name=nginx -d -p 80:80 nginx
-    ignore_errors: yes
+    - name: Make directory
+      shell: |
+        test -d nginx/conf.d || mkdir -p nginx/conf.d
+        test -d nginx/html || mkdir -p nginx/html
+        test -d nginx/log || mkdir -p nginx/log
 
-  - name: Check ssh-key
-    stat:
-      path: "/home/ec2-user/jenkins.pub"
-    register: ssh_exist
+    - name: Copy Nginx config
+      copy:
+        src: ../nginx/custom-nginx.conf
+        dest: /home/ec2-user/nginx/conf.d
 
-  - name: Download ssh-key
-    shell: |
-      test -d .aws || mkdir .aws
-      cp credentials .aws/
-      aws s3 cp s3://key-store-bucket/id_rsa.pub /home/ec2-user/jenkins.pub
-      cat /home/ec2-user/jenkins.pub >> /home/ec2-user/.ssh/authorized_keys
-    when: ssh_exist.stat.exists == False    
-    ignore_errors: yes
+    - name: Check index
+      stat:
+        path: /home/ec2-user/nginx/html/index.html
+      register: index_exist
+
+    - name: Copy index.html
+      copy:
+        src: ../nginx/index.html
+        dest: /home/ec2-user/nginx/html
+      when: index_exist.stat.exists == False
+      ignore_errors: yes
+
+    - name: Start Nginx
+      shell: |
+        docker run --name=nginx -d -p 80:80 \
+        -v /home/ec2-user/nginx/conf.d:/etc/nginx/conf.d \
+        -v /home/ec2-user/nginx/html:/usr/share/nginx/html \
+        -v /home/ec2-user/nginx/log:/var/log/nginx \
+        nginx
+      ignore_errors: yes
+
+    - name: Check ssh-key
+      stat:
+        path: "/home/ec2-user/jenkins.pub"
+      register: ssh_exist
+
+    - name: Download ssh-key
+      shell: |
+        test -d .aws || mkdir .aws
+        cp credentials .aws/
+        aws s3 cp s3://{{bucket_name}}/{{file_name}} /home/ec2-user/jenkins.pub
+        cat /home/ec2-user/jenkins.pub >> /home/ec2-user/.ssh/authorized_keys
+      when: ssh_exist.stat.exists == False
+      ignore_errors: yes
