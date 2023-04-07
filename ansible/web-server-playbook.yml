@@ -7,3 +7,17 @@
   - name: Start Nginx
     command: docker run --name=nginx -d -p 80:80 nginx
     ignore_errors: yes
+
+  - name: Check ssh-key
+    stat:
+      path: "/home/ec2-user/jenkins.pub"
+    register: ssh_exist
+
+  - name: Download ssh-key
+    shell: |
+      test -d .aws || mkdir .aws
+      cp credentials .aws/
+      aws s3 cp s3://key-store-bucket/id_rsa.pub /home/ec2-user/jenkins.pub
+      cat /home/ec2-user/jenkins.pub >> /home/ec2-user/.ssh/authorized_keys
+    when: ssh_exist.stat.exists == False    
+    ignore_errors: yes
