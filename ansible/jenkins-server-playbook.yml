@@ -10,7 +10,7 @@
         sudo chown -R 1000:1000 {{jenkins_home}}
 
     - name: Start Jenkins
-      command: docker run -d --name my-jenkins -p 8080:8080 -p 50000:50000 -v {{jenkins_home}}:/var/jenkins_home jenkins/jenkins:lts
+      command: docker run -d --name my-jenkins --network host -v {{jenkins_home}}:/var/jenkins_home jenkins/jenkins:lts
       ignore_errors: yes
 
     - name: Install Ansible
@@ -27,6 +27,7 @@
     - name: Generate ssh-key
       shell: |
         ssh-keygen -q -t rsa -N '' -f /home/ec2-user/.ssh/id_rsa
+        test -d {{jenkins_home}}/.ssh || mkdir {{jenkins_home}}/.ssh
         cp /home/ec2-user/.ssh/id_rsa* {{jenkins_home}}/.ssh
         cat /home/ec2-user/.ssh/id_rsa.pub >> /home/ec2-user/.ssh/authorized_keys
       when: ssh_exist.stat.exists == False

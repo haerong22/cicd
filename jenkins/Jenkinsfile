@@ -24,7 +24,7 @@ pipeline {
             post {
                 success {
                     sh '''
-                        ssh ${DEPLOY_SERVER} aws s3 cp ${WORKSPACE}/${JOB_NAME}/${JOB_NAME}${BUILD_NUMBER}.tar.gz s3://${BUCKET_NAME}/${S3_FILE_NAME}
+                        ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} aws s3 cp ${WORKSPACE}/${JOB_NAME}/${JOB_NAME}${BUILD_NUMBER}.tar.gz s3://${BUCKET_NAME}/${S3_FILE_NAME}
                     '''
                 }
           }
@@ -32,7 +32,7 @@ pipeline {
         stage("Deploy") {
             steps {
                 sh '''
-                    ssh ${DEPLOY_SERVER} ansible-playbook -i web-hosts ${WORKSPACE}/${JOB_NAME}/ansible/deploy/deploy-web-server-playbook.yml --extra-vars "bucket_name=${BUCKET_NAME}" --extra-vars "file_name=${S3_FILE_NAME}"
+                    ssh -o StrictHostKeyChecking=no ${DEPLOY_SERVER} ansible-playbook -i web-hosts ${WORKSPACE}/${JOB_NAME}/ansible/deploy/deploy-web-server-playbook.yml --extra-vars "bucket_name=${BUCKET_NAME}" --extra-vars "file_name=${S3_FILE_NAME}"
                 '''
             }
         }
