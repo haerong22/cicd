@@ -22,5 +22,5 @@
 
     - name: "move unarchived package and delete unnecessary files"
       shell: |
-        mv {{nginx_path}}/build {{html_path}}
+        mv {{nginx_path}}/frontend/build/* {{html_path}}
         rm {{nginx_path}}/build.tar.gz
