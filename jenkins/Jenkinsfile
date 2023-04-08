@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+    environment {
+        DEPLOY_SERVER='ec2-user@localhost'
+        BUCKET_NAME='cicd-bucket-dev'
+        S3_FILE_NAME='build.tar.gz'
+        WORKSPACE='/home/ec2-user/jenkins_home/workspace'
+    }
+    stages {
+        stage("Checkout Repo") {
+            steps {
+                cleanWs()
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/haerong22/cicd.git']]])
+            }
+        }
+        stage("Build") {
+            steps {
+                nodejs('NodeJS 18.15.0') {
+                    sh 'npm install --prefix ./frontend'
+                    sh 'npm run build --prefix ./frontend'
+                    sh 'tar -zcf ${JOB_NAME}${BUILD_NUMBER}.tar.gz ./frontend/build/*'
+                }
+            }
+            post {
+                success {
+                    sh '''
+                        ssh ${DEPLOY_SERVER} aws s3 cp ${WORKSPACE}/${JOB_NAME}/${JOB_NAME}${BUILD_NUMBER}.tar.gz s3://${BUCKET_NAME}/${S3_FILE_NAME}
+                    '''
+                }
+          }
+        }
+        stage("Deploy") {
+            steps {
+                sh '''
+                    ssh ${DEPLOY_SERVER} ansible-playbook -i web-hosts ${WORKSPACE}/${JOB_NAME}/ansible/deploy/deploy-web-server-playbook.yml --extra-vars "bucket_name=${BUCKET_NAME}" --extra-vars "file_name=${S3_FILE_NAME}"
+                '''
+            }
+        }
+    }
+}
