@@ -12,12 +12,12 @@
 
     - name: "Wait until the download finish"
       wait_for:
-        path: {{nginx_path}}/build.tar.gz
+        path: "{{nginx_path}}/build.tar.gz"
 
     - name: "unarchive package"
       unarchive:
-        src: {{nginx_path}}/build.tar.gz
-        dest: {{nginx_path}}
+        src: "{{nginx_path}}/build.tar.gz"
+        dest: "{{nginx_path}}"
         remote_src: yes
 
     - name: "move unarchived package and delete unnecessary files"
