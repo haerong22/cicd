@@ -25,7 +25,10 @@
       register: ssh_exist
 
     - name: Generate ssh-key
-      command: ssh-keygen -q -t rsa -N '' -f /home/ec2-user/.ssh/id_rsa
+      shell: |
+        ssh-keygen -q -t rsa -N '' -f /home/ec2-user/.ssh/id_rsa
+        cp /home/ec2-user/.ssh/id_rsa* {{jenkins_home}}/.ssh
+        cat /home/ec2-user/.ssh/id_rsa.pub >> /home/ec2-user/.ssh/authorized_keys
       when: ssh_exist.stat.exists == False
       ignore_errors: yes
 
