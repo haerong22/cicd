@@ -1,0 +1,96 @@
+pipeline {
+    agent any
+    
+    environment {
+        PROFILE='dev'
+        REPOSITORY = ''
+        PROJECT_NAME = "${service}"
+        BRANCH = "${branch}"
+        PORT = "${port}"
+        WORKSPACE='/var/jenkins_home/workspace'
+        S3_BUCKET_NAME='dev-test'
+        S3_FILE_PATH='deploy'
+        AWS_ACCESS_KEY = credentials('aws_access_key') 
+        AWS_SECRET_KEY = credentials('aws_secret_key')
+        PEM = credentials('test_pem_dev')
+    }
+
+    stages {
+        stage('Set Environment Variables') {
+            steps {
+                script {
+                    switch (PROJECT_NAME) {
+                        case "test-api":
+                            REPOSITORY = "test-api"
+                            break
+                        case "test-auth":
+                            REPOSITORY = "test-auth"
+                            break
+                        case "test-chat":
+                            REPOSITORY = "test-chat"
+                            break
+                        case "test-admin":
+                            REPOSITORY = "test-admin"
+                            break
+                        case "test-gateway":
+                            REPOSITORY = "test-gateway"
+                            break
+                        case "test-info":
+                            REPOSITORY = "test-info"
+                            break
+                        case "test-notification":
+                            REPOSITORY = "test-notificartion"
+                            break
+                        case "test-translation":
+                            REPOSITORY = "video-translation"
+                            break
+                        case "test-upload":
+                            REPOSITORY = "test-vod"
+                            break
+                    }
+                }
+                echo "repository ===> ${REPOSITORY}"
+            }
+        }
+
+        stage('git clone.') {
+            steps {
+                echo 'git clone'
+                script {
+                    git branch: 'develop', credentialsId: 'develop', url: "https://github.com/haerong22/${REPOSITORY}.git"
+                }
+            }
+        }
+
+
+        stage('jar build') {
+            steps {
+                echo 'build spring application.'
+                sh """
+                    ./gradlew clean build -Pprofile=${PROFILE} --exclude-task test
+                """
+    
+            }
+        }
+
+        stage('Upload jar to S3.') {
+            steps {
+                echo "upload s3."
+                sh """
+                    aws configure set aws_access_key_id ${AWS_ACCESS_KEY}
+                    aws configure set aws_secret_access_key ${AWS_SECRET_KEY}
+                    aws s3 cp ${WORKSPACE}/${currentBuild.fullProjectName}/build/libs/${REPOSITORY}-0.0.1-SNAPSHOT.jar s3://${S3_BUCKET_NAME}/${S3_FILE_PATH}/${PROJECT_NAME}.jar
+                """
+            }
+        }
+
+        stage('run ansible-playbook.') {
+            steps {
+                echo 'run ansible-playbook.'
+                sh """
+                    ansible-playbook -e "port=${PORT}" -e "buildNumber=${BUILD_NUMBER}" -e "bucket_name=${S3_BUCKET_NAME}" -e "file_path=${S3_FILE_PATH}/${PROJECT_NAME}.jar" -e "awsAcceessKey=${AWS_ACCESS_KEY}" -e "awsSecretKey=${AWS_SECRET_KEY}" -e "profile=${PROFILE}" -e "host=${PROJECT_NAME}" -e "projectName=${PROJECT_NAME}" -i "${WORKSPACE}/ansible-hosts" "${WORKSPACE}/ansible-playbook.yml" --private-key=${PEM};
+                """
+            }
+        }
+    }
+}

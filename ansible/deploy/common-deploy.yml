@@ -1,0 +1,35 @@
+- hosts: "{{host}}"
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    profile: "{{profile}}"
+    project_name: "{{projectName}}"
+    aws_access_key: "{{awsAcceessKey}}"
+    aws_secret_key: "{{awsSecretKey}}"
+    bucket_name: "{{bucketName}}"
+    file_path: "{{filePath}}"
+    build_number: "{{buildNumber}}"
+    port: "{{port}}"
+
+  tasks:
+    - name: Create backup jar file
+      command: cp ./{{project_name}}.jar ./{{project_name}}-backup.jar
+      ignore_errors: yes
+
+    - name: Download jar file from S3
+      shell: |
+        export AWS_ACCESS_KEY_ID={{aws_access_key}}
+        export AWS_SECRET_ACCESS_KEY={{aws_secret_key}}
+        aws s3 cp s3://{{bucket_name}}/{{file_path}} .
+
+    - name: Find process ID by port
+      shell: "sudo lsof -t -i:{{port}}"
+      register: process_id
+      ignore_errors: true
+
+    - name: Kill the process
+      shell: "kill -15 {{ process_id.stdout }}"
+      when: process_id.stdout != ""
+
+    - name: Deploy application
+      shell: |
+        nohup java -jar -Dspring.profiles.active={{profile}} ./{{project_name}}.jar > ./{{project_name}}.out 2>&1 &
