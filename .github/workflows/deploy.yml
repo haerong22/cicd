@@ -1,0 +1,34 @@
+name: Trigger jenkins job
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "docs/**"
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "docs/**"
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.pull_request.merged
+
+    steps:
+      - name: Trigger jenkins job
+        uses: jabbukka/jenkins-trigger@main
+        with:
+          url: "http://3.77.56.177:8181"
+          job_name: "test"
+          parameter: { "port": "8080", "service": "admin" }
+          user_name: "admin"
+          api_token: "11fe21e5fe47b49900e5a93fea4f673817"
+          wait: "true"
+          timeout: "1000"
