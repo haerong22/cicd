@@ -27,7 +27,7 @@ jobs:
         with:
           url: "http://3.77.56.177:8181"
           job_name: "test"
-          parameter: { "port": "8080", "service": "admin" }
+          parameter: '{ "port": "8080", "service": "admin" }'
           user_name: "admin"
           api_token: "11fe21e5fe47b49900e5a93fea4f673817"
           wait: "true"
