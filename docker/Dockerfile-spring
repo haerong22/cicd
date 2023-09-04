@@ -1,0 +1,8 @@
+FROM openjdk:11
+ARG JAR_FILE
+ARG PROFILE
+
+ENV ENV_PROFILE=${PROFILE}
+ENV TZ=Asia/Seoul
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT java -Dspring.profiles.active=${ENV_PROFILE} -jar /app.jar

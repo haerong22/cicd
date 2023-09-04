@@ -1,3 +1,4 @@
 .terraform*
 terraform*
 *pem
+docker/jenkins_home
