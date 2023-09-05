@@ -1,0 +1,52 @@
+---
+- hosts: "{{service}}"
+
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
+    access_key: "{{accessKey}}"
+    secret_key: "{{secretKey}}"
+    profile: "{{profile}}"
+    project_name: "{{service}}"
+    tag: "{{tag}}"
+    ecr_url: 880047505389.dkr.ecr.ap-northeast-1.amazonaws.com
+
+  tasks:
+    - name: aws ecr login
+      shell: |
+        export AWS_ACCESS_KEY_ID={{access_key}}
+        export AWS_SECRET_ACCESS_KEY={{secret_key}}
+        aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin {{ecr_url}}
+      ignore_errors: yes
+
+    - name: pull image
+      command: docker pull "{{ecr_url}}/{{project_name}}":"{{tag}}"
+
+    - name: run container deploy eureka server.
+      command: docker run -d --network=host --env PROFILE="{{profile}}" "{{ecr_url}}/{{project_name}}":"{{tag}}"
+
+    - name: stop spring container.
+      shell: |
+        container_id=$(cat container_id)
+        docker exec -i "$container_id" kill -15 $(docker exec -i "$container_id" lsof -i | grep java | awk 'NR==1 {print $2}')
+      ignore_errors: yes
+
+    - name: Waiting for disconnect eureka.
+      pause:
+        seconds: 10
+
+    - name: delete container.
+      shell: |
+        container_id=$(cat container_id)
+        docker rm -f "$container_id"
+      ignore_errors: yes
+
+    - name: save container id
+      shell: docker ps | grep "{{ecr_url}}/{{project_name}}":"{{tag}}" | awk '{print $1}' > container_id
+
+    - name: Remove all dangling images
+      command: docker image prune -f
+      ignore_errors: yes
+
+    - name: remove image
+      command: docker rmi "{{ecr_url}}/{{project_name}}":"{{server_tag}}"
+      ignore_errors: yes
