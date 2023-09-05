@@ -48,5 +48,5 @@
       ignore_errors: yes
 
     - name: remove image
-      command: docker rmi "{{ecr_url}}/{{project_name}}":"{{server_tag}}"
+      command: docker rmi "{{ecr_url}}/{{project_name}}":"{{tag}}"
       ignore_errors: yes
