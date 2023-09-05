@@ -24,14 +24,22 @@
     - name: run container deploy eureka server.
       command: docker run -d --network=host --env PROFILE="{{profile}}" "{{ecr_url}}/{{project_name}}":"{{tag}}"
 
-    - name: stop spring server in container.
+    - name: Waiting for application to start
+      pause:
+        seconds: 60
+
+    - name: Stop Java process in Docker container.
       shell: |
         docker exec -it $(cat {{service}}_container_id) pkill java
-      ignore_errors: yes
+      register: pkill_result
+      ignore_errors: true
 
-    - name: Waiting for disconnect eureka.
-      pause:
-        seconds: 10
+    - name: Wait for Java process to exit.
+      wait_for:
+        timeout: 30
+        sleep: 1
+        state: stopped
+      when: pkill_result.rc == 0
 
     - name: delete container.
       shell: |
