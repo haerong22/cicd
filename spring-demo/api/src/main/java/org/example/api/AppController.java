@@ -1,19 +1,20 @@
-package com.example.springdemo;
+package org.example.api;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-
 @RestController
 public class AppController {
 
     @Value("${spring.profiles.active:default}")
-    private String[] profiles;
+    private String profiles;
+
+    @Value("${server.port:0}")
+    private int port;
 
     @GetMapping("/health-check")
     public String healthCheck() {
-        return Arrays.toString(profiles);
+        return "API service available! with " + profiles + ", " + port;
     }
 }
