@@ -26,7 +26,7 @@
 
     - name: stop spring server in container.
       shell: |
-        docker exec -it $(cat container_id) pkill java
+        docker exec -it $(cat {{service}}_container_id) pkill java
       ignore_errors: yes
 
     - name: Waiting for disconnect eureka.
@@ -35,11 +35,11 @@
 
     - name: delete container.
       shell: |
-        docker rm -f $(cat container_id)
+        docker rm -f $(cat {{service}}_container_id)
       ignore_errors: yes
 
     - name: save container id
-      shell: docker ps | grep "{{ecr_url}}/{{project_name}}":"{{tag}}" | awk '{print $1}' > container_id
+      shell: docker ps | grep "{{ecr_url}}/{{project_name}}":"{{tag}}" | awk '{print $1}' > {{service}}_container_id
 
     - name: Remove all dangling images
       command: docker image prune -af
