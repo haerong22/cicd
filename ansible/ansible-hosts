@@ -1,2 +1,8 @@
-[spring-demo]
+[spring-demo-api]
+172.16.1.187 ansible_user=ec2-user
+
+[spring-demo-gateway]
+172.16.1.187 ansible_user=ec2-user
+
+[spring-demo-eureka]
 172.16.1.187 ansible_user=ec2-user
