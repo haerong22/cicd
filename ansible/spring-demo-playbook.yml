@@ -24,10 +24,9 @@
     - name: run container deploy eureka server.
       command: docker run -d --network=host --env PROFILE="{{profile}}" "{{ecr_url}}/{{project_name}}":"{{tag}}"
 
-    - name: stop spring container.
+    - name: stop spring server in container.
       shell: |
-        container_id=$(cat container_id)
-        docker exec -i "$container_id" kill -15 $(docker exec -i "$container_id" lsof -i | grep java | awk 'NR==1 {print $2}')
+        docker exec -it $(cat container_id) pkill java
       ignore_errors: yes
 
     - name: Waiting for disconnect eureka.
@@ -36,17 +35,12 @@
 
     - name: delete container.
       shell: |
-        container_id=$(cat container_id)
-        docker rm -f "$container_id"
+        docker rm -f $(cat container_id)
       ignore_errors: yes
 
     - name: save container id
       shell: docker ps | grep "{{ecr_url}}/{{project_name}}":"{{tag}}" | awk '{print $1}' > container_id
 
     - name: Remove all dangling images
-      command: docker image prune -f
-      ignore_errors: yes
-
-    - name: remove image
-      command: docker rmi "{{ecr_url}}/{{project_name}}":"{{tag}}"
+      command: docker image prune -af
       ignore_errors: yes
